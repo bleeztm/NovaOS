@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaOS roadmap</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><span class="logo"></span>NovaOS</a>
+  <nav><a href="index.html">Home</a><a href="docs.html">Install</a><a href="roadmap.html" class="active">Roadmap</a></nav>
+</header>
+<main>
+<h1>Roadmap</h1>
+<div class="timeline">
+  <div class="step done"><h3>v0.1 — Bootloader ✅</h3><p>Dual BIOS+UEFI boot, unified BootInfo, kernel entry. Done and QEMU-verified.</p></div>
+  <div class="step done"><h3>v0.2 — Emergency shell ✅</h3><p>VGA/framebuffer console, 13 commands, serial mirror, FAT ls. Done.</p></div>
+  <div class="step done"><h3>v0.3 — GUI ✅</h3><p>Compositor, window manager, taskbar, 4 apps, themes. Done (VRAM-verified).</p></div>
+  <div class="step next"><h3>v0.4 — Filesystem write + processes</h3><p>FAT12/32 write path, file creation in editor, cooperative multitasking, ELF-ish app loading via syscalls.</p></div>
+  <div class="step next"><h3>v0.5 — Networking idea</h3><p>NE2000/rtl8139 polling driver, ARP + ICMP ping, tiny HTTP status page served from the kernel.</p></div>
+</div>
+</main>
+<footer>© NovaOS contributors.</footer>
+<script src="script.js"></script>
+</body>
+</html>

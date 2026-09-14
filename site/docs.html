@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaOS install guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><span class="logo"></span>NovaOS</a>
+  <nav><a href="index.html">Home</a><a href="docs.html" class="active">Install</a><a href="roadmap.html">Roadmap</a></nav>
+</header>
+<main>
+<h1>Install guide</h1>
+<div class="tabs"><button class="tab active" data-t="qemu">QEMU</button><button class="tab" data-t="usb">Real hardware</button><button class="tab" data-t="uefi">UEFI notes</button></div>
+<div class="tabbody" id="t-qemu">
+<h2>QEMU (recommended)</h2>
+<pre class="code">git clone https://github.com/bleeztm/NovaOS.git
+cd NovaOS
+make run-bios        # Linux / WSL / MSYS2
+build.bat run-bios   # Windows cmd</pre>
+<p>Needs <code>nasm</code>, <code>qemu-system-x86_64</code>, <code>python3</code>.
+Serial log shows every boot stage; press <b>F8</b> for the shell.</p>
+<pre class="code"># UEFI path (needs OVMF firmware)
+OVMF=/usr/share/OVMF/OVMF_CODE.fd make run-uefi
+# Windows: set OVMF=C:\path\to\OVMF_CODE.fd &amp; build.bat run-uefi</pre>
+</div>
+<div class="tabbody hidden" id="t-usb">
+<h2>Real hardware (USB stick)</h2>
+<ol>
+<li>Build <code>build/floppy.img</code> (BIOS/CSM) or <code>build/esp.img</code> (UEFI).</li>
+<li>Flash with <b>Rufus</b> (DD mode) or <b>balenaEtcher</b>.</li>
+<li>Boot the stick. For UEFI: disable <b>Secure Boot</b> (our loader is unsigned).</li>
+<li>No display? The shell mirrors everything to <b>COM1 serial</b> — capture with a USB-serial adapter at 38400 8N1.</li>
+</ol>
+<p>Tested matrix: QEMU BIOS (SeaBIOS + std VGA) and QEMU UEFI (OVMF + GOP).
+Real-hardware reports welcome as GitHub issues.</p>
+</div>
+<div class="tabbody hidden" id="t-uefi">
+<h2>BIOS vs UEFI</h2>
+<table>
+<tr><th></th><th>BIOS path</th><th>UEFI path</th></tr>
+<tr><td>Image</td><td><code>floppy.img</code> (FAT12)</td><td><code>esp.img</code> (FAT32 ESP)</td></tr>
+<tr><td>Loader</td><td>MBR + stage2, VBE framebuffer</td><td><code>EFI/BOOT/BOOTX64.EFI</code>, GOP</td></tr>
+<tr><td>Kernel file</td><td><code>KERNEL.BIN</code> (floppy root)</td><td><code>KERNEL.BIN</code> (ESP root)</td></tr>
+<tr><td>Firmware needs</td><td>CSM / legacy boot</td><td>Secure Boot <b>off</b></td></tr>
+</table>
+<p>Both hand the same <code>BootInfo</code> struct to the same kernel — see <code>docs/BOOT.md</code>.</p>
+</div>
+</main>
+<footer>© NovaOS contributors.</footer>
+<script src="script.js"></script>
+</body>
+</html>

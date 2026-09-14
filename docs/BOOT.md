@@ -32,9 +32,14 @@ Types: 1 usable, 2 reserved, 3 ACPI-reclaim, 4 NVS, 5 bad.
 * `stage2.asm` — 16-bit loader at `0x7E00`:
   1. A20 (`int 0x15/0x2401` + port `0x92`), stack at `0x9E00`.
   2. E820 memory map → `0x5400` (converted to 24-byte UEFI-style entries).
-  3. VESA VBE: info `0x5000`, mode info `0x5200`. Tries `0x11B`
-     (**1280×1024×24** — note: `0x11B` is *not* 1024×768×32),
-     falls back to `0x115` (800×600×24), else `fb_addr = 0` (VGA shell).
+  3. VESA VBE: info `0x5000`, mode info `0x5200`. Tries modes
+     `0x118` (1024×768×24), `0x11B` (1280×1024×24), `0x115`
+     (800×600×24), `0x112` (640×480×24) in order. A mode is accepted
+     only if 0x4F01 succeeds, ModeAttributes bit 7 (LFB) is set,
+     MemoryModel is packed(4)/direct(6), bpp ≥ 15, and 0x4F02+LFB
+     succeeds — blindly trusting a mode number can land the display in
+     a planar mode while the kernel draws linear (tri-color checkerboard
+     symptom). Else `fb_addr = 0` (VGA shell).
      ES is reset to 0 before every VBE call (some BIOSes clobber ES).
   4. FAT12 parser: root dir (LBA 35) → find `KERNEL.BIN` → follow cluster
      chain from DATA (LBA 49), streaming clusters to `0x100000` via
@@ -75,6 +80,30 @@ Debug: single-letter progress marks on isa-debugcon port `0x402`
   **after** subtracting shadow. Getting this wrong faults (verified!).
 * SFS type map: EFI Conventional(7)→usable(1), ACPIReclaim(9)→3,
   ACPINVS(10)→4, Unusable(8)→5, else reserved(2).
+
+## GRUB path — `boot/grub/` (boot_type = 2)
+
+Third way in, same kernel out — for anyone who prefers a real bootloader.
+
+* `multiboot.asm` — pure-NASM **hand-built ELF32** (`ET_EXEC`, one
+  `PT_LOAD` at `0x200000`) with a Multiboot1 header (flags
+  `ALIGN|MEMINFO`, no VIDEO flag — GRUB aborts entries whose requested
+  video mode it dislikes). GRUB enters 32-bit protected mode with
+  `EBX = multiboot_info*`. The stub is **self-relocating** (runs wherever
+  GRUB parks it), converts Multiboot mmap/framebuffer/module info to the
+  unified BootInfo ABI (`boot_type=2`), copies the `KERNEL.BIN` GRUB
+  module to `0x100000`, switches to long mode (own tables at `0x70000`,
+  framebuffer region mapped), and jumps to `kernel_entry(RDI=BootInfo*)`.
+  Serial/VGA progress marks: `G` entry, `M` mmap, `F` framebuffer,
+  `K` module copied, `L` long mode.
+* `grub.cfg` — `multiboot /boot/nova_stub.bin` + `module /boot/KERNEL.BIN`,
+  `gfxmode`+`gfxpayload=keep`, serial debug. Needs GRUB video modules +
+  font for graphics; without them it boots text mode and the kernel
+  correctly falls back to the VGA shell.
+* Build: `make iso-grub` / `./build.sh iso-grub` (needs `grub-mkrescue`,
+  i.e. Linux/WSL with `grub-pc-bin xorriso mtools`), run with
+  `make run-grub` (`qemu -cdrom novaos-grub.iso`). Verified: GRUB menu →
+  stub marks → kernel → drivers → VGA shell; GUI via BIOS/UEFI paths.
 
 ## Images — `tools/mkimg.py` (pure Python, no mtools)
 

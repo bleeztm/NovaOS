@@ -145,9 +145,12 @@ get_memory_map_e820:
     mov dword [mmap_count], 1
 .ok: ret
 
-; VBE: try 1280x1024x24 (0x11B), fallback 800x600x24 (0x115), else fbaddr=0 (VGA shell)
-; NOTE: 0x11B is 1280x1024x24 per VESA (NOT 1024x768x32). Bochs/SeaBIOS has
-; no 32bpp VESA modes; the kernel's fb driver handles 24bpp + 32bpp (GOP).
+; VBE mode picker: tries linear 24bpp modes, validates each before setting.
+; A mode is accepted only if: 0x4F01 succeeds, ModeAttributes bit7 (LFB)
+; is set, MemoryModel is packed(4)/direct(6), bpp >= 15, and 0x4F02+LFB
+; succeeds. (Some VBE BIOSes number modes differently; blindly trusting a
+; mode number can land the display in a planar mode while we draw linear.)
+; Else fbaddr=0 and the kernel falls back to the VGA text shell.
 vbe_setup:
     mov dword [vbe_width], 1024
     mov dword [vbe_height], 768
@@ -171,13 +174,18 @@ vbe_setup:
     pop ax
     cmp ax, 0x004F
     jne .novesa
-    ; get mode info for 0x11B
+    mov si, vbe_modes
+.nextmode:
+    mov cx, [si]                           ; candidate mode (0 = end)
+    test cx, cx
+    jz .novesa
+    add si, 2
+    push si                                ; save table pos across BIOS call
     push ax
     xor ax, ax
     mov es, ax
     pop ax
     mov ax, 0x4F01
-    mov cx, 0x11B
     mov di, VBE_MODEINFO
     int 0x10
     push ax
@@ -188,24 +196,28 @@ vbe_setup:
     call dbg_ax
     pop ax
     cmp ax, 0x004F
-    jne .try115
-    jmp .setmode11B
-.try115:
-    push ax
-    xor ax, ax
-    mov es, ax
-    pop ax
-    mov ax, 0x4F01
-    mov cx, 0x115
-    mov di, VBE_MODEINFO
-    int 0x10
-    cmp ax, 0x004F
-    jne .novesa
-    mov cx, 0x4115
-    jmp .setmode
-.setmode11B:
-    mov cx, 0x411B              ; LFB + mode
-.setmode:
+    jne .skipmode
+    ; validate: LFB supported? (ModeAttributes bit 7)
+    mov ax, [VBE_MODEINFO+0]
+    test ax, 0x0080
+    jz .skipmode
+    ; validate: MemoryModel packed(4) or direct(6)?
+    mov al, [VBE_MODEINFO+27]
+    cmp al, 4
+    je .modelok
+    cmp al, 6
+    jne .skipmode
+.modelok:
+    ; validate: bpp >= 15?
+    mov al, [VBE_MODEINFO+25]
+    cmp al, 15
+    jb .skipmode
+    ; set mode with LFB bit
+    pop si
+    push si
+    mov bx, cx
+    or bx, 0x4000
+    mov cx, bx
     mov ax, 0x4F02
     int 0x10
     push ax
@@ -216,7 +228,13 @@ vbe_setup:
     call dbg_ax
     pop ax
     cmp ax, 0x004F
-    jne .novesa
+    jne .skipmode
+    pop si                                 ; mode accepted
+    jmp .parse
+.skipmode:
+    pop si
+    jmp .nextmode
+.parse:
     ; parse ModeInfoBlock at VBE_MODEINFO (offsets per VBE 3.0 spec)
     movzx eax, word [VBE_MODEINFO+16]   ; BytesPerScanLine
     mov [vbe_pitch], eax
@@ -237,8 +255,16 @@ vbe_setup:
     call dbg_ax
     pop eax
     ret
-.novesa: ; keep defaults; do NOT set graphics mode (kernel shell falls back to VGA text)
+.novesa: ; keep fbaddr=0; do NOT set graphics mode (kernel uses VGA text shell)
     ret
+
+; candidate VBE modes, best first (0-terminated)
+vbe_modes:
+    dw 0x118          ; 1024x768x24
+    dw 0x11B          ; 1280x1024x24
+    dw 0x115          ; 800x600x24
+    dw 0x112          ; 640x480x24
+    dw 0
 
 ; ---- FAT12 loader: find KERNEL.BIN in root dir, follow cluster chain ----
 ; Floppy geometry: 2 heads, 18 spt. Reserved=17, fats=2*9, root=14 sectors.

@@ -42,6 +42,7 @@ Real-hardware reports welcome as GitHub issues.</p>
 <table>
 <tr><th></th><th>BIOS path</th><th>UEFI path</th></tr>
 <tr><td>Image</td><td><code>floppy.img</code> (FAT12)</td><td><code>esp.img</code> (FAT32 ESP)</td></tr>
+<tr><td>Also</td><td colspan="2"><code>novaos-grub.iso</code> via GRUB multiboot (<code>make iso-grub</code> on Linux/WSL, run with <code>make run-grub</code>)</td></tr>
 <tr><td>Loader</td><td>MBR + stage2, VBE framebuffer</td><td><code>EFI/BOOT/BOOTX64.EFI</code>, GOP</td></tr>
 <tr><td>Kernel file</td><td><code>KERNEL.BIN</code> (floppy root)</td><td><code>KERNEL.BIN</code> (ESP root)</td></tr>
 <tr><td>Firmware needs</td><td>CSM / legacy boot</td><td>Secure Boot <b>off</b></td></tr>

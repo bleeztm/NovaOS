@@ -8,6 +8,7 @@
 
 kernel_entry:
     cli
+    cld
     mov rsp, kernel_stack_top
     mov rbp, rsp
     push rdi                                ; save BootInfo*

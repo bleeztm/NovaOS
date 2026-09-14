@@ -20,6 +20,7 @@ if "%TARGET%"=="clean" (
 %NASM% -f bin -I. boot\bios\stage2.asm -o %BUILD%\stage2.bin || exit /b 1
 %NASM% -f bin -I. kernel\entry.asm -o %BUILD%\KERNEL.BIN || exit /b 1
 %NASM% -f bin -I. boot\uefi\uefi_boot.asm -o %BUILD%\BOOTX64.EFI || exit /b 1
+%NASM% -f bin -I. boot\grub\multiboot.asm -o %BUILD%\nova_stub.bin || exit /b 1
 dir %BUILD%
 if "%TARGET%"=="all" goto :images
 if "%TARGET%"=="floppy" goto :floppy
@@ -41,8 +42,13 @@ if "%TARGET%"=="iso" (
   echo ISO: use Rufus/balenaEtcher with floppy.img (BIOS) or esp.img (UEFI). See docs.
   exit /b 0
 )
+if "%TARGET%"=="iso-grub" (
+  echo iso-grub needs grub-mkrescue: run in WSL with grub-pc-bin + xorriso + mtools,
+  echo then: ./build.sh iso-grub   (uses boot\grub\grub.cfg + build\nova_stub.bin)
+  exit /b 0
+)
 if "%TARGET%"=="run-bios" (
-  qemu-system-x86_64 -fda %BUILD%\floppy.img -serial stdio -m 128
+  qemu-system-x86_64 -drive file=%BUILD%\floppy.img,format=raw,if=floppy -serial stdio -m 128
   exit /b 0
 )
 if "%TARGET%"=="run-uefi" (

@@ -10,6 +10,7 @@ BOOTINFO_VERSION    equ 0x00000001
 
 BOOTINFO_BOOT_BIOS  equ 0
 BOOTINFO_BOOT_UEFI  equ 1
+BOOTINFO_BOOT_GRUB  equ 2
 
 ; --- struct offsets ---
 %define BI_MAGIC          0    ; u32 magic

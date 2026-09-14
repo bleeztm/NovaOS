@@ -26,7 +26,15 @@ case $TARGET in
   iso) build_bins; build_floppy; build_esp;
        if command -v xorrisofs >/dev/null; then xorrisofs -o $BUILD/novaos.iso -b floppy.img -e esp.img $BUILD;
        else echo "xorrisofs not found - use floppy.img / esp.img directly"; exit 1; fi;;
-  run-bios) build_bins; build_floppy; exec $QEMU -fda $BUILD/floppy.img -serial stdio -m 128;;
+  iso-grub) build_bins;
+       $NASM -f bin -I. boot/grub/multiboot.asm -o $BUILD/nova_stub.bin;
+       command -v grub-mkrescue >/dev/null || { echo "grub-mkrescue not found (apt: grub-pc-bin xorriso mtools)"; exit 1; };
+       rm -rf $BUILD/iso; mkdir -p $BUILD/iso/boot/grub;
+       cp $BUILD/nova_stub.bin $BUILD/KERNEL.BIN $BUILD/iso/boot/;
+       cp boot/grub/grub.cfg $BUILD/iso/boot/grub/;
+       grub-mkrescue -o $BUILD/novaos-grub.iso $BUILD/iso;;
+  run-grub) $0 iso-grub; exec $QEMU -cdrom $BUILD/novaos-grub.iso -serial stdio -m 128;;
+  run-bios) build_bins; build_floppy; exec $QEMU -drive file=$BUILD/floppy.img,format=raw,if=floppy -serial stdio -m 128;;
   run-uefi) build_bins; build_esp;
        [ -f "$OVMF" ] || { echo "OVMF not found at $OVMF"; exit 1; }
        exec $QEMU -drive file=$BUILD/esp.img,format=raw -bios "$OVMF" -serial stdio -m 128 -vga std;;

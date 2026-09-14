@@ -1,5 +1,5 @@
 # NovaOS Makefile (Linux / MSYS2 / WSL)
-# Targets: all floppy.img esp.img iso run-bios run-uefi clean
+# Targets: all floppy.img esp.img iso iso-grub run-bios run-uefi run-grub clean
 NASM ?= nasm
 QEMU ?= qemu-system-x86_64
 PY   ?= python3
@@ -36,8 +36,23 @@ iso: all
 	  xorrisofs -o $(BUILD)/novaos.iso -b floppy.img -e esp.img $(BUILD); \
 	else echo "xorrisofs not found - use floppy.img (BIOS) and esp.img (UEFI) directly"; exit 1; fi
 
+# GRUB multiboot ISO (needs grub-mkrescue + xorriso; BootInfo boot_type=2)
+$(BUILD)/nova_stub.bin: boot/grub/multiboot.asm include/bootinfo.inc | $(BUILD)
+	$(NASM) -f bin -I. boot/grub/multiboot.asm -o $@
+	ls -l $@
+
+iso-grub: $(BUILD)/nova_stub.bin $(BUILD)/KERNEL.BIN
+	@if ! command -v grub-mkrescue >/dev/null; then echo "grub-mkrescue not found (apt: grub-pc-bin xorriso mtools)"; exit 1; fi
+	rm -rf $(BUILD)/iso && mkdir -p $(BUILD)/iso/boot/grub
+	cp $(BUILD)/nova_stub.bin $(BUILD)/KERNEL.BIN $(BUILD)/iso/boot/
+	cp boot/grub/grub.cfg $(BUILD)/iso/boot/grub/
+	grub-mkrescue -o $(BUILD)/novaos-grub.iso $(BUILD)/iso
+
+run-grub: iso-grub
+	$(QEMU) -cdrom $(BUILD)/novaos-grub.iso -serial stdio -m 128
+
 run-bios: $(BUILD)/floppy.img
-	$(QEMU) -fda $(BUILD)/floppy.img -serial stdio -m 128
+	$(QEMU) -drive file=$(BUILD)/floppy.img,format=raw,if=floppy -serial stdio -m 128
 
 run-uefi: $(BUILD)/esp.img
 	@if [ -f "$(OVMF)" ]; then \

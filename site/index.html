@@ -1,3 +1,74 @@
 <!DOCTYPE html>
-<h1>testing testing hello</h1>
-<p>testing stuff idk</p>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaOS — hobby OS in pure x86 assembly</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><span class="logo"></span>NovaOS</a>
+  <nav><a href="index.html" class="active">Home</a><a href="docs.html">Install</a><a href="roadmap.html">Roadmap</a></nav>
+</header>
+<main>
+<section class="hero">
+  <div class="hero-text">
+    <h1>NovaOS</h1>
+    <p class="tag">A hobby operating system written in <b>pure x86 NASM assembly</b>.
+    Dual BIOS + UEFI boot, one 64-bit kernel, GUI desktop, emergency shell.</p>
+    <div class="btnrow">
+      <a class="btn primary" href="https://github.com/bleeztm/NovaOS/releases">Download ISO (BIOS/UEFI)</a>
+      <a class="btn" href="https://github.com/bleeztm/NovaOS">GitHub repo</a>
+    </div>
+    <ul class="ticks">
+      <li>512-byte MBR + stage2 → long mode, VBE framebuffer</li>
+      <li>Pure-ASM UEFI app: GOP, memory map, ExitBootServices</li>
+      <li>Verified in QEMU on both paths — serial logs + VRAM dumps</li>
+    </ul>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="mock win1"><div class="tbar"><i></i><b>Terminal</b></div><div class="tbody">term&gt; _</div></div>
+    <div class="mock win2"><div class="tbar"><i></i><b>File Manager</b></div><div class="tbody">KERNEL.BIN<br>README.TXT</div></div>
+    <div class="taskbar"><span class="start">nova</span></div>
+  </div>
+</section>
+<section>
+  <h2>Features</h2>
+  <div class="grid">
+    <div class="card"><h3>Dual boot</h3><p>BIOS (MBR → protected → long mode, VBE) and UEFI (GOP, direct ESP load) converge on one unified <code>BootInfo</code> ABI.</p></div>
+    <div class="card"><h3>GUI desktop</h3><p>Framebuffer compositor, draggable windows with title bars, taskbar + start menu, mouse cursor, 8×16 font, light/dark themes.</p></div>
+    <div class="card"><h3>Emergency shell</h3><p>Failsafe console (F8 / Ctrl+Alt+T): <code>help mem peek poke ls cat fbinfo gui-restart reboot shutdown halt</code>. Try it below.</p></div>
+    <div class="card"><h3>Real drivers</h3><p>GDT/IDT/paging, PIT + RTC, PS/2 keyboard + mouse, ATA PIO, COM1 serial log, PC speaker, <code>int 0x80</code> syscalls.</p></div>
+  </div>
+</section>
+<section>
+  <h2>Screenshots (CSS mockups)</h2>
+  <div class="shots">
+    <figure class="shot">
+      <div class="screen desktop"><div class="dwin"><div class="tbar"><b>System Monitor</b></div><div class="tbody">Uptime: 00:07<br>RAM: free 118MB</div></div><div class="dtask"><span class="start">nova</span></div></div>
+      <figcaption>Desktop: windows, taskbar, cursor</figcaption>
+    </figure>
+    <figure class="shot">
+      <div class="screen shell"><div class="stext">NovaOS Emergency Shell v0.1<br>nova&gt; mem<br>Free RAM (bytes): 121634816<br>nova&gt; <span class="caret">_</span></div></div>
+      <figcaption>Emergency shell (VGA / framebuffer console)</figcaption>
+    </figure>
+  </div>
+</section>
+<section>
+  <h2>Try the emergency shell (in your browser)</h2>
+  <div class="term" id="term"><div class="tout" id="tout"></div><div class="tin"><span>nova&gt;</span><input id="tin" autocomplete="off" spellcheck="false" placeholder="type help"></div></div>
+</section>
+<section>
+  <h2>Boot it yourself</h2>
+  <pre class="code">git clone https://github.com/bleeztm/NovaOS.git
+cd NovaOS
+# Windows:  build.bat run-bios      (or run-uefi with OVMF set)
+# Linux:    make run-bios           (or OVMF=/usr/share/OVMF/OVMF_CODE.fd make run-uefi)</pre>
+  <p>Full guide: <a href="docs.html">Install on QEMU + real hardware</a>. Spec: <a href="https://github.com/bleeztm/NovaOS/tree/main/docs">docs/</a>.</p>
+</section>
+</main>
+<footer>© NovaOS contributors — MIT-style hobby project. Built with NASM, tested with QEMU.</footer>
+<script src="script.js"></script>
+</body>
+</html>
